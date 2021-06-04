@@ -169,7 +169,7 @@ impl Profile {
         let mut newbuf = buf;
         for (name, val) in checklist.iter() {
             if !val {
-                writeln!(&mut newbuf, "user_pref(\"{}\", {})", name, val)?;
+                writeln!(&mut newbuf, "user_pref(\"{}\", true);", name)?;
             }
         }
         fs::write(&prefs_path, &newbuf)?;
