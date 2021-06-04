@@ -131,7 +131,7 @@ impl Profile {
                 continue;
             }
 
-            let line = try_continue!(line.strip_prefix("user_pref("));
+            let line = try_continue!(line.strip_prefix("user_pref"));
             let line = try_continue!(line.strip_suffix(";"));
             let line = line.trim();
             let line = try_continue!(line.strip_prefix("("));
@@ -167,13 +167,11 @@ impl Profile {
         fs::write(&prefs_bak_path, &buf)?;
 
         let mut newbuf = buf;
-        writeln!(&mut newbuf)?;
         for (name, val) in checklist.iter() {
             if !val {
-                writeln!(&mut newbuf, "use_pref(\"{}\", {})", name, val)?;
+                writeln!(&mut newbuf, "user_pref(\"{}\", {})", name, val)?;
             }
         }
-
         fs::write(&prefs_path, &newbuf)?;
 
         Ok(())
