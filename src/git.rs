@@ -42,11 +42,27 @@ pub fn pull(path: &Path) -> anyhow::Result<()> {
     let repo = git2::Repository::open(path)?;
     let mut remote = repo.find_remote("origin")?;
     remote.connect(git2::Direction::Fetch)?;
+
     let branch = remote.default_branch()?;
-    let branch = branch.as_str().unwrap_or("master");
+    let branch = branch.as_str().unwrap_or("refs/heads/master");
+
     remote.fetch(&[branch], None, None)?;
+
+    let fetch_head = repo.find_reference("FETCH_HEAD")?;
+    let fetch_commit = repo.reference_to_annotated_commit(&fetch_head)?;
+
+    let analysis = repo.merge_analysis(&[&fetch_commit])?;
+
+    if analysis.0.is_up_to_date() {
+        return Ok(())
+    } else if !analysis.0.is_fast_forward() {
+        anyhow::bail!("Can't fast forward")
+    }
+
+    let mut reference = repo.find_reference(branch)?;
+    reference.set_target(fetch_commit.id(), "Fast-Forward")?;
     repo.set_head(branch)?;
-    repo.checkout_head(None)?;
+    repo.checkout_head(Some(git2::build::CheckoutBuilder::default().force()))?;
 
     Ok(())
 }
