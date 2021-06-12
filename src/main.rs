@@ -19,7 +19,8 @@ struct Options {
 enum Command {
     List(command::list::Options),
     Install(command::install::Options),
-    Update(command::update::Options)
+    Update(command::update::Options),
+    Uninstall(command::uninstall::Options),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -37,6 +38,7 @@ fn main() -> anyhow::Result<()> {
     match options.command {
         Command::List(cmd) => cmd.exec(&config),
         Command::Install(cmd) => cmd.exec(&config),
-        Command::Update(cmd) => cmd.exec(&config)
+        Command::Update(cmd) => cmd.exec(&config),
+        Command::Uninstall(cmd) => cmd.exec(&config),
     }
 }

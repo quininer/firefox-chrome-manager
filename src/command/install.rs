@@ -48,6 +48,10 @@ impl Options {
             }
         };
 
+        let repo_name = repo_path.strip_prefix(config.projdir.data_dir())
+            .ok()
+            .unwrap_or(&repo_path);
+
         if !repo_path.exists() {
             if let Some(path) = repo_path.parent() {
                 fs::create_dir_all(path)
@@ -60,11 +64,7 @@ impl Options {
 
             git::clone(&repo_url, &repo_path)?;
 
-            let name = repo_path.strip_prefix(config.projdir.data_dir())
-                .ok()
-                .unwrap_or(&repo_path);
-
-            println!("{}: clone ok", name.display());
+            println!("{}: clone ok", repo_name.display());
         }
 
         for profile in profiles.iter() {
@@ -97,6 +97,8 @@ impl Options {
 
                 symlink_dir(&repo_path, &chrome_path)?;
             }
+
+            println!("install {} for {}", repo_name.display(), profile.name);
         }
 
         Ok(())
