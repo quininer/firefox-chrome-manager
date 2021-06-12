@@ -12,7 +12,7 @@ pub struct Options {
 }
 
 impl Options {
-    pub(super) fn exec(self, config: &Config) -> anyhow::Result<()> {
+    pub fn exec(self, config: &Config) -> anyhow::Result<()> {
         if self.profile {
             println!("{:#?}", config.profiles()?);
         } else {

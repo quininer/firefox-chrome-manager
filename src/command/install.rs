@@ -1,6 +1,7 @@
 use std::{ fs, io };
 use std::process::Command;
 use argh::FromArgs;
+use url::Url;
 use crate::profile::Config;
 
 
@@ -29,13 +30,30 @@ impl Options {
             profile.check_and_make_prefs(config)?;
         }
 
-        let repo_path = config.projdir.data_dir().join(&self.repo);
+        let mut repo_path = Box::new(config.projdir.data_dir()).to_path_buf();
+
+        let repo_url = match Url::parse(&self.repo) {
+            Ok(url) => {
+                if let Some(domain) = url.domain()
+                    .filter(|&domain| domain != "github.com")
+                {
+                    repo_path.push(domain);
+                }
+                repo_path.push(url.path());
+                self.repo
+            },
+            Err(_) => {
+                repo_path.push(&self.repo);
+                format!("https://github.com/{}", self.repo)
+            }
+        };
+
         if !repo_path.exists() {
             let status = Command::new("git")
                 .current_dir(config.projdir.data_dir())
                 .arg("clone")
-                .arg(format!("https://github.com/{}", self.repo))
-                .arg(&self.repo)
+                .arg(repo_url)
+                .arg(&repo_path)
                 .status()?;
 
             if !status.success() {
@@ -44,7 +62,7 @@ impl Options {
         }
 
         for profile in profiles.iter() {
-            let chrome_path = config.chrome_path(&profile);
+            let chrome_path = config.chrome_path(profile);
 
             #[cfg(unix)] {
                 use std::os::unix::fs::symlink;

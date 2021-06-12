@@ -56,8 +56,8 @@ impl Config {
         let mut output = Vec::new();
 
         for entry in walkdir::WalkDir::new(self.projdir.data_dir())
-            .min_depth(2)
-            .max_depth(2)
+            .min_depth(1)
+            .max_depth(5)
             .follow_links(true)
         {
             let entry = entry?;
@@ -66,7 +66,7 @@ impl Config {
                 continue;
             }
 
-            if !entry.path().join(".git").exists() {
+            if !entry.path().join(".git").is_dir() {
                 continue;
             }
 
@@ -145,10 +145,10 @@ impl Profile {
             }
 
             let line = try_continue!(line.strip_prefix("user_pref"));
-            let line = try_continue!(line.strip_suffix(";"));
+            let line = try_continue!(line.strip_suffix(';'));
             let line = line.trim();
-            let line = try_continue!(line.strip_prefix("("));
-            let line = try_continue!(line.strip_suffix(")"));
+            let line = try_continue!(line.strip_prefix('('));
+            let line = try_continue!(line.strip_suffix(')'));
             let line = line.trim();
             let (name, val) = try_continue!(line.split_once(','));
             let name = name.trim();

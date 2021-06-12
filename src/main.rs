@@ -1,7 +1,6 @@
-mod list;
-mod install;
-mod update;
 mod profile;
+// mod git;
+mod command;
 
 use std::{ fs, io };
 use argh::FromArgs;
@@ -18,9 +17,9 @@ struct Options {
 #[derive(FromArgs, Debug)]
 #[argh(subcommand)]
 enum Command {
-    List(list::Options),
-    Install(install::Options),
-    Update(update::Options)
+    List(command::list::Options),
+    Install(command::install::Options),
+    Update(command::update::Options)
 }
 
 fn main() -> anyhow::Result<()> {
