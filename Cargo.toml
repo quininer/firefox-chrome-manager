@@ -11,3 +11,6 @@ anyhow = "1"
 directories = "3"
 walkdir = "2"
 rust-ini = "0.17"
+url = "2"
+
+git2 = { version = "0.13", optional = true }

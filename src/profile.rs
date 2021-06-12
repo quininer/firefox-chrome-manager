@@ -2,11 +2,11 @@ use std::{ fs, io };
 use std::fmt::Write;
 use std::path::PathBuf;
 use anyhow::Context;
-use directories::{ UserDirs, ProjectDirs };
+use directories::{ BaseDirs, ProjectDirs };
 use ini::Ini;
 
 pub struct Config {
-    pub userdir: UserDirs,
+    pub basedir: BaseDirs,
     pub projdir: ProjectDirs
 }
 
@@ -19,17 +19,35 @@ pub struct Profile {
 impl Config {
     pub fn new() -> anyhow::Result<Config> {
         Ok(Config {
-            userdir: UserDirs::new()
+            basedir: BaseDirs::new()
                 .context("Unable to retrieve user home from system")?,
             projdir: ProjectDirs::from("", "", env!("CARGO_PKG_NAME"))
                 .context("Unable to retrieve project path from system")?
         })
     }
 
-    pub fn chrome_path(&self, profile: &Profile) -> PathBuf {
-        self.userdir.home_dir()
+    #[cfg(all(unix, not(target_os = "macos")))]
+    pub fn firefox_path(&self) -> PathBuf {
+        self.basedir.home_dir()
             .join(".mozilla")
             .join("firefox")
+    }
+
+    #[cfg(windows)]
+    pub fn firefox_path(&self) -> PathBuf {
+        self.basedir.config_dir()
+            .join("Mozilla")
+            .join("Firefox")
+    }
+
+    #[cfg(target_os = "macos")]
+    pub fn firefox_path(&self) -> PathBuf {
+        self.basedir.config_dir()
+            .join("Firefox")
+    }
+
+    pub fn chrome_path(&self, profile: &Profile) -> PathBuf {
+        self.firefox_path()
             .join(&profile.path)
             .join("chrome")
     }
@@ -59,10 +77,7 @@ impl Config {
     }
 
     pub fn profiles(&self) -> anyhow::Result<Vec<Profile>> {
-        let profiles_path = self.userdir.home_dir()
-            .join(".mozilla")
-            .join("firefox")
-            .join("profiles.ini");
+        let profiles_path = self.firefox_path().join("profiles.ini");
 
         let mut profiles = Vec::new();
 
@@ -104,9 +119,7 @@ impl Profile {
             }
         }
 
-        let prefs_path = config.userdir.home_dir()
-            .join(".mozilla")
-            .join("firefox")
+        let prefs_path = config.firefox_path()
             .join(&self.path)
             .join("prefs.js");
 
@@ -159,9 +172,7 @@ impl Profile {
         }
 
         // make
-        let prefs_bak_path =  config.userdir.home_dir()
-            .join(".mozilla")
-            .join("firefox")
+        let prefs_bak_path =  config.firefox_path()
             .join(&self.path)
             .join("prefs-1.js");
         fs::write(&prefs_bak_path, &buf)?;

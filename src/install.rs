@@ -8,7 +8,7 @@ use crate::profile::Config;
 #[derive(FromArgs, Debug)]
 #[argh(subcommand, name = "install")]
 pub struct Options {
-    /// theme repo name `username/repo`
+    /// theme repo name `username/repo` or url
     #[argh(positional)]
     repo: String,
 
