@@ -1,8 +1,8 @@
 use std::{ fs, io };
-use std::process::Command;
 use argh::FromArgs;
 use url::Url;
 use crate::profile::Config;
+use crate::git;
 
 
 /// Install theme
@@ -39,7 +39,7 @@ impl Options {
                 {
                     repo_path.push(domain);
                 }
-                repo_path.push(url.path());
+                repo_path.push(url.path().trim_matches('/'));
                 self.repo
             },
             Err(_) => {
@@ -49,16 +49,22 @@ impl Options {
         };
 
         if !repo_path.exists() {
-            let status = Command::new("git")
-                .current_dir(config.projdir.data_dir())
-                .arg("clone")
-                .arg(repo_url)
-                .arg(&repo_path)
-                .status()?;
-
-            if !status.success() {
-                anyhow::bail!("git clone failed: {:?}", status);
+            if let Some(path) = repo_path.parent() {
+                fs::create_dir_all(path)
+                    .or_else(|err| if err.kind() == io::ErrorKind::AlreadyExists {
+                        Ok(())
+                    } else {
+                        Err(err)
+                    })?;
             }
+
+            git::clone(&repo_url, &repo_path)?;
+
+            let name = repo_path.strip_prefix(config.projdir.data_dir())
+                .ok()
+                .unwrap_or(&repo_path);
+
+            println!("{}: clone ok", name.display());
         }
 
         for profile in profiles.iter() {

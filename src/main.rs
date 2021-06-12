@@ -1,5 +1,5 @@
 mod profile;
-// mod git;
+mod git;
 mod command;
 
 use std::{ fs, io };

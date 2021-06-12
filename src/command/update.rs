@@ -1,6 +1,6 @@
-use std::process::Command;
 use argh::FromArgs;
 use crate::profile::Config;
+use crate::git;
 
 
 /// Update theme
@@ -21,15 +21,13 @@ impl Options {
         }
 
         for repo in repos {
-            let status = Command::new("git")
-                .current_dir(&repo)
-                .arg("pull")
-                .arg("-r")
-                .status()?;
+            git::pull(&repo)?;
 
-            if !status.success() {
-                anyhow::bail!("git pull failed: {:?}", status);
-            }
+            let name = repo.strip_prefix(config.projdir.data_dir())
+                .ok()
+                .unwrap_or(&repo);
+
+            println!("{}: update ok", name.display());
         }
 
         Ok(())
