@@ -85,6 +85,7 @@ impl Options {
 
             #[cfg(windows)] {
                 use std::os::windows::fs::symlink_dir;
+                use walkdir::WalkDir;
 
                 fs::remove_dir_all(&chrome_path)
                     .or_else(|err| if err.kind() == io::ErrorKind::NotFound {
@@ -95,7 +96,46 @@ impl Options {
 
                 // TODO it work?
 
-                symlink_dir(&repo_path, &chrome_path)?;
+                match symlink_dir(&repo_path, &chrome_path) {
+                    Ok(()) => (),
+                    Err(ref err) if err.kind() == io::ErrorKind::PermissionDenied => {
+                        fs::create_dir_all(&chrome_path)
+                            .or_else(|err| if err.kind() == io::ErrorKind::AlreadyExists {
+                                Ok(())
+                            } else {
+                                Err(err)
+                            })?;
+
+                        for entry in WalkDir::new(&repo_path).contents_first(false) {
+                            let entry = entry?;
+
+                            let path = match entry.path().strip_prefix(&repo_path) {
+                                Ok(path) => chrome_path.join(path),
+                                Err(_) => continue
+                            };
+
+                            if entry.file_type().is_dir() {
+                                fs::create_dir_all(&path)
+                                    .or_else(|err| if err.kind() == io::ErrorKind::AlreadyExists {
+                                        Ok(())
+                                    } else {
+                                        Err(err)
+                                    })?;
+                            }
+
+                            if entry.file_type().is_file() {
+                                fs::copy(entry.path(), &path)
+                                    .map(drop)
+                                    .or_else(|err| if err.kind() == io::ErrorKind::AlreadyExists {
+                                        Ok(())
+                                    } else {
+                                        Err(err)
+                                    })?;
+                            }
+                        }
+                    },
+                    Err(err) => return Err(err.into())
+                }
             }
 
             println!("install {} for {}", repo_name.display(), profile.name);
